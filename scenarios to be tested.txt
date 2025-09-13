@@ -1,0 +1,78 @@
+Test Scenarios for arxml_handler.py
+==================================
+
+1. Positive Scenarios (Expected Success)
+----------------------------------------
+
+1.1 Add a new attribute
+- Input file: SOUND_Short_eHorizon_Pdu.arxml
+- Command:
+  python arxml_handler.py SOUND_Short_eHorizon_Pdu.arxml --action add --xpath ".//a:I-SIGNAL-I-PDU[a:SHORT-NAME='SOUND_Short_eHorizon_Pdu']" --attr CUSTOM --value 123
+- Expected: <I-SIGNAL-I-PDU> element has CUSTOM="123" attribute in EcuExtract_updated.arxml.
+
+1.2 Edit existing attribute (UUID)
+- Input file: SOUND_Short_eHorizon_Pdu.arxml
+- Command:
+  python arxml_handler.py SOUND_Short_eHorizon_Pdu.arxml --action edit --xpath ".//a:I-SIGNAL-I-PDU[a:SHORT-NAME='SOUND_Short_eHorizon_Pdu']" --attr UUID --value NEW-UUID-123
+- Expected: UUID attribute value updated to NEW-UUID-123.
+
+1.3 Delete an attribute (UUID)
+- Input file: SOUND_Short_eHorizon_Pdu.arxml
+- Command:
+  python arxml_handler.py SOUND_Short_eHorizon_Pdu.arxml --action delete --xpath ".//a:I-SIGNAL-I-PDU[a:SHORT-NAME='SOUND_Short_eHorizon_Pdu']" --attr UUID
+- Expected: UUID attribute is removed from <I-SIGNAL-I-PDU>.
+
+1.4 Export ARXML to JSON
+- After any action, check for JSON output.
+- Expected:
+  - EcuExtract_updated.arxml contains updates.
+  - filename_updated.json contains ARXML data in JSON format.
+
+
+2. Negative Scenarios (Error Handling)
+--------------------------------------
+
+2.1 Input file does not exist
+Command:
+  python arxml_handler.py not_found.arxml --action add --xpath ".//a:I-SIGNAL-I-PDU" --attr TEST --value 1
+- Expected: ❌ Error: Input ARXML file not found.
+
+2.2 Invalid ARXML file (corrupt XML)
+- Input file: Broken ARXML (malformed XML tags).
+- Expected: ❌ Error: Error parsing ARXML file.
+
+2.3 Wrong XPath
+Command:
+  python arxml_handler.py SOUND_Short_eHorizon_Pdu.arxml --action add --xpath ".//a:NON_EXISTING" --attr TEST --value 1
+- Expected: ❌ Error: Element not found for XPath.
+
+2.4 Editing non-existing attribute
+Command:
+  python arxml_handler.py SOUND_Short_eHorizon_Pdu.arxml --action edit --xpath ".//a:I-SIGNAL-I-PDU[a:SHORT-NAME='SOUND_Short_eHorizon_Pdu']" --attr NON_EXISTING --value 123
+- Expected: ❌ Error: Attribute 'NON_EXISTING' not found in element.
+
+2.5 Deleting non-existing attribute
+Command:
+  python arxml_handler.py SOUND_Short_eHorizon_Pdu.arxml --action delete --xpath ".//a:I-SIGNAL-I-PDU[a:SHORT-NAME='SOUND_Short_eHorizon_Pdu']" --attr NON_EXISTING
+- Expected: ❌ Error: Attribute 'NON_EXISTING' not found in element.
+
+2.6 Missing required arguments
+Command:
+  python arxml_handler.py SOUND_Short_eHorizon_Pdu.arxml --action add --xpath ".//a:I-SIGNAL-I-PDU"
+- Expected: ❌ Error: Add requires --attr and --value.
+
+
+3. Edge Cases
+-------------
+
+3.1 Add attribute that already exists
+- Expected: Raise warning and exit code here.
+
+3.2 Multiple <I-SIGNAL-I-PDU> elements in file
+- Expected: Only element matching XPath is changed.
+
+3.3 Large ARXML file
+- Expected: Tool should complete without crash.
+
+3.4 Case sensitivity
+- Expected: UUID ≠ uuid. Tool should treat them as different.
