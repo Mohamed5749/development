@@ -1,0 +1,40 @@
+name: PR Quality Checks
+
+on:
+  pull_request:
+    types: [opened, reopened, labeled, unlabeled, synchronize]
+  issue_comment:
+    types: [created]
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'check') ||
+      (github.event_name == 'issue_comment' && github.event.comment.body == 'recheck')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install black
+      - run: black --check .
+      - run: python -m compileall -q .
+
+  auto-merge:
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    # Trigger only when someone comments "merge"
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      github.event.comment.body == 'merge'
+    permissions:
+      pull-requests: write       # needed to merge
+      contents: write            # needed if squash/merge
+    steps:
+      - name: Merge the pull request
+        uses: peter-evans/merge-pull-request@v3
+        with:
+          pull-request: ${{ github.event.issue.number }}
+          method: squash         # or merge/rebase if you prefer
