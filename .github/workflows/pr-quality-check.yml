@@ -50,8 +50,3 @@ jobs:
       - name: Merge the pull request into development
         run: |
           echo "Mohamed"
-        uses: peter-evans/merge-pull-request@v3
-        with:
-          pull-request: ${{ github.event.issue.number }}
-          method: squash
-          commit-message: "Auto-merged PR into development"
