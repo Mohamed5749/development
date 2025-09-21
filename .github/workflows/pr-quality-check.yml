@@ -33,8 +33,10 @@ jobs:
       github.event.issue.pull_request &&
       github.event.comment.body == 'merge'
     steps:
-      - name: Merge the pull request
+      - name: Merge the pull request into development
         uses: peter-evans/merge-pull-request@v3
         with:
           pull-request: ${{ github.event.issue.number }}
           method: squash
+          commit-message: "Auto-merged PR into development"
+          target: development
