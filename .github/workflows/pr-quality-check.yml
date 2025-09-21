@@ -1,4 +1,4 @@
-name: PR Quality Checks & Auto Merge
+name: PR Quality Checks & Auto Merge (with Debug)
 
 on:
   pull_request:
@@ -25,11 +25,26 @@ jobs:
       - run: black --check .
       - run: python -m compileall -q .
 
+  debug-job:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment'
+    steps:
+      - name: Print key values
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Comment body: ${{ github.event.comment.body }}"
+          echo "Is this a PR? ${{ github.event.issue.pull_request }}"
+      - name: Dump full event payload
+        run: |
+          echo "Event file path: $GITHUB_EVENT_PATH"
+          cat $GITHUB_EVENT_PATH
+
   auto-merge:
     needs: quality-checks
     runs-on: ubuntu-latest
     if: |
-      
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
       github.event.comment.body == 'merge'
     steps:
       - name: Merge the pull request into development
@@ -38,4 +53,3 @@ jobs:
           pull-request: ${{ github.event.issue.number }}
           method: squash
           commit-message: "Auto-merged PR into development"
-  
