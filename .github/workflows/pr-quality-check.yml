@@ -48,6 +48,8 @@ jobs:
       github.event.comment.body == 'merge'
     steps:
       - name: Merge the pull request into development
+        run: |
+          echo "Mohamed"
         uses: peter-evans/merge-pull-request@v3
         with:
           pull-request: ${{ github.event.issue.number }}
