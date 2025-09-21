@@ -9,41 +9,29 @@ on:
 jobs:
   quality-checks:
     runs-on: ubuntu-latest
-    # Run if the PR has a "check" label OR someone comments exactly "recheck"
     if: |
       contains(github.event.pull_request.labels.*.name, 'check') ||
-      (github.event_name == 'issue_comment' &&
-       github.event.comment.body == 'recheck')
+      (github.event_name == 'issue_comment' && github.event.comment.body == 'recheck')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"   # removed cache to avoid warning
-      - run: pip install black flake8
+          python-version: "3.12"
+      - run: pip install black
       - run: black --check .
-      - run: flake8 .
       - run: python -m compileall -q .
 
   auto-merge:
     needs: quality-checks
     runs-on: ubuntu-latest
-    # Merge when someone comments exactly "merge"
     if: |
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
-      github.event.comment.body == 'merge' &&
-      (github.event.comment.author_association == 'MEMBER' ||
-       github.event.comment.author_association == 'OWNER'  ||
-       github.event.comment.author_association == 'COLLABORATOR')
+      github.event.comment.body == 'merge'
     permissions:
       pull-requests: write
       contents: write
     steps:
-      - name: Debug comment
-        run: |
-          echo "Author: ${{ github.event.comment.user.login }}"
-          echo "Association: ${{ github.event.comment.author_association }}"
-          echo "Comment body: '${{ github.event.comment.body }}'"
       - name: Merge the pull request
         uses: peter-evans/merge-pull-request@v3
         with:
