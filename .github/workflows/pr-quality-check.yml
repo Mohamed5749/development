@@ -25,3 +25,23 @@ jobs:
       - run: black --check .
       - run: python -m compileall -q .
 
+  auto-merge:
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, 'merge')
+    steps:
+      - name: Debug event payload
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "PR exists: ${{ github.event.issue.pull_request }}"
+          echo "Comment body: '${{ github.event.comment.body }}'"
+      - name: Merge the pull request
+        uses: peter-evans/merge-pull-request@v3
+        with:
+          pull-request: ${{ github.event.issue.number }}
+          method: squash
+          commit-message: "Auto-merged PR into development"
+          target: development
