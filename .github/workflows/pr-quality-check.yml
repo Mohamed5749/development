@@ -13,9 +13,6 @@ permissions:
 jobs:
   quality-checks:
     runs-on: ubuntu-latest
-    if: |
-      contains(github.event.pull_request.labels.*.name, 'check') ||
-      (github.event_name == 'issue_comment' && github.event.comment.body == 'recheck')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,6 +27,7 @@ jobs:
 
   auto-merge:
     runs-on: ubuntu-latest
+    needs: quality-checks
     steps:
       - name: Debug event payload
         run: |
@@ -37,32 +35,19 @@ jobs:
           echo "PR exists: ${{ github.event.issue?.pull_request }}"
           echo "Comment body: '${{ github.event.comment.body }}'"
 
-      - name: Auto-merge PR if comment is 'merge' and checks passed
+      - name: Auto-merge PR if comment is 'merge'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // Only run on PR comments
             if (!context.payload.issue?.pull_request) {
               console.log("Not a PR comment; skipping.");
               return;
             }
 
-            // Normalize comment
             const comment = context.payload.comment.body.trim().toLowerCase();
             if (comment !== "merge") {
               console.log("Comment is not 'merge'; skipping.");
-              return;
-            }
-
-            // Check if quality checks passed (if they exist)
-            let checksPassed = true;
-            if ('needs' in context && 'quality-checks' in context.needs) {
-              checksPassed = context.needs['quality-checks'].result === 'success';
-            }
-
-            if (!checksPassed) {
-              console.log("Quality checks did not pass. Skipping merge.");
               return;
             }
 
