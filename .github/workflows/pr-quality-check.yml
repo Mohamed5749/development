@@ -28,11 +28,12 @@ jobs:
   auto-merge:
     runs-on: ubuntu-latest
     needs: quality-checks
+    if: ${{ github.event_name == 'issue_comment' }}  # only run for issue comments
     steps:
       - name: Debug event payload
         run: |
           echo "Event name: ${{ github.event_name }}"
-          echo "PR exists: ${{ github.event.issue?.pull_request }}"
+          echo "PR exists: ${{ github.event.issue && github.event.issue.pull_request }}"
           echo "Comment body: '${{ github.event.comment.body }}'"
 
       - name: Auto-merge PR if comment is 'merge'
@@ -40,6 +41,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // Only run on PR comments
             if (!context.payload.issue?.pull_request) {
               console.log("Not a PR comment; skipping.");
               return;
