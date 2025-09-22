@@ -1,4 +1,4 @@
-name: PR Quality Checks
+name: PR Quality Checks & Auto Merge
 
 on:
   pull_request:
@@ -6,34 +6,61 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  pull-requests: write
+  contents: write
+
 jobs:
   quality-checks:
     runs-on: ubuntu-latest
-    if: |
-      contains(github.event.pull_request.labels.*.name, 'check') ||
-      (github.event_name == 'issue_comment' && github.event.comment.body == 'recheck')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install black
-      - run: black --check .
-      - run: python -m compileall -q .
+      - id: checks
+        run: |
+          black --check .
+          python -m compileall -q .
+          echo "All checks passed"
 
   auto-merge:
-    needs: quality-checks
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'issue_comment' &&
-      github.event.issue.pull_request &&
-      github.event.comment.body == 'merge'
-    permissions:
-      pull-requests: write
-      contents: write
+    needs: quality-checks
     steps:
-      - name: Merge the pull request
-        uses: peter-evans/merge-pull-request@v3
+      - name: Debug event payload
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "PR exists: ${{ github.event.issue?.pull_request }}"
+          echo "Comment body: '${{ github.event.comment.body }}'"
+
+      - name: Auto-merge PR if comment is 'merge'
+        uses: actions/github-script@v7
         with:
-          pull-request: ${{ github.event.issue.number }}
-          method: squash
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            if (!context.payload.issue?.pull_request) {
+              console.log("Not a PR comment; skipping.");
+              return;
+            }
+
+            const comment = context.payload.comment.body.trim().toLowerCase();
+            if (comment !== "merge") {
+              console.log("Comment is not 'merge'; skipping.");
+              return;
+            }
+
+            const pr_number = context.payload.issue.number;
+            console.log(`Merging PR #${pr_number} into development...`);
+
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr_number,
+              merge_method: "squash",
+              commit_title: `Auto-merged PR #${pr_number} into development`,
+              commit_message: "Merged via comment 'merge'"
+            });
+
+            console.log(`PR #${pr_number} merged successfully.`);
