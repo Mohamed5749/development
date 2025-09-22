@@ -15,7 +15,7 @@ jobs:
       - name: Debug event payload
         run: |
           echo "Event name: ${{ github.event_name }}"
-          echo "PR exists: ${{ github.event.issue?.pull_request }}"
+          echo "PR exists: ${{ github.event.issue.pull_request }}"
           echo "Comment body: '${{ github.event.comment.body }}'"
 
       - name: Merge PR if comment is 'merge'
@@ -37,15 +37,16 @@ jobs:
             }
 
             const pr_number = context.payload.issue.number;
-            console.log(`Merging PR #${pr_number} into development...`);
+            console.log(`Merging PR #${pr_number} into its base branch...`);
 
             await github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pr_number,
-              merge_method: "squash",           // Can be 'merge', 'squash', or 'rebase'
+              merge_method: "squash",
               commit_title: `Auto-merged PR #${pr_number}`,
               commit_message: "Merged via comment 'merge'"
             });
 
             console.log(`PR #${pr_number} merged successfully.`);
+
