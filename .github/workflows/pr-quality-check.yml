@@ -40,14 +40,27 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // Ensure this is a PR comment
             if (!context.payload.issue?.pull_request) {
               console.log("Not a PR comment; skipping.");
               return;
             }
 
+            // Normalize comment text
             const comment = context.payload.comment.body.trim().toLowerCase();
             if (comment !== "merge") {
               console.log("Comment is not 'merge'; skipping.");
+              return;
+            }
+
+            // Ensure quality checks passed
+            let checksPassed = true;
+            if ('needs' in context && 'quality-checks' in context.needs) {
+              checksPassed = context.needs['quality-checks'].result === 'success';
+            }
+
+            if (!checksPassed) {
+              console.log("Quality checks did not pass. Skipping merge.");
               return;
             }
 
