@@ -1,14 +1,10 @@
-name: PR Quality Checks & Auto Merge
+name: PR Quality Checks
 
 on:
   pull_request:
     types: [opened, reopened, labeled, unlabeled, synchronize]
   issue_comment:
     types: [created]
-
-permissions:
-  pull-requests: write
-  contents: write
 
 jobs:
   quality-checks:
@@ -24,3 +20,20 @@ jobs:
       - run: pip install black
       - run: black --check .
       - run: python -m compileall -q .
+
+  auto-merge:
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      github.event.comment.body == 'merge'
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Merge the pull request
+        uses: peter-evans/merge-pull-request@v3
+        with:
+          pull-request: ${{ github.event.issue.number }}
+          method: squash
