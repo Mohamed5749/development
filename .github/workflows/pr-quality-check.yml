@@ -34,7 +34,7 @@ jobs:
       - name: Debug event payload
         run: |
           echo "Event name: ${{ github.event_name }}"
-          echo "PR exists: ${{ github.event.issue.pull_request }}"
+          echo "PR exists: ${{ github.event.issue?.pull_request }}"
           echo "Comment body: '${{ github.event.comment.body }}'"
 
       - name: Auto-merge PR if comment is 'merge' and checks passed
@@ -43,7 +43,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             // Only run on PR comments
-            if (!context.payload.issue.pull_request) {
+            if (!context.payload.issue?.pull_request) {
               console.log("Not a PR comment; skipping.");
               return;
             }
@@ -57,8 +57,8 @@ jobs:
 
             // Check if quality checks passed (if they exist)
             let checksPassed = true;
-            if (context.workflow.jobs?.quality-checks) {
-              checksPassed = '${{ needs.quality-checks.result }}' === 'success';
+            if ('needs' in context && 'quality-checks' in context.needs) {
+              checksPassed = context.needs['quality-checks'].result === 'success';
             }
 
             if (!checksPassed) {
