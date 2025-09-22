@@ -1,31 +1,47 @@
-name: Quality Checks
+name: PR Quality Checks & Auto Merge
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, labeled, unlabeled, synchronize]
+  issue_comment:
+    types: [created]
 
 permissions:
-  contents: read
+  pull-requests: write
+  contents: write
 
 jobs:
-  black-format:
+  quality-checks:
     runs-on: ubuntu-latest
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'check') ||
+      (github.event_name == 'issue_comment' && github.event.comment.body == 'recheck')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Check Black formatting
-        run: |
-          pip install black
-          black --check .
+      - run: pip install black
+      - run: black --check .
+      - run: python -m compileall -q .
 
-  python-syntax:
+  auto-merge:
+    needs: quality-checks
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, 'merge')
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Debug event payload
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "PR exists: ${{ github.event.issue.pull_request }}"
+          echo "Comment body: '${{ github.event.comment.body }}'"
+      - name: Merge the pull request
+        uses: peter-evans/merge-pull-request@v3
         with:
-          python-version: "3.12"
-      - name: Check Python syntax
-        run: python -m compileall -q .
+          pull-request: ${{ github.event.issue.number }}
+          method: squash
+          commit-message: "Auto-merged PR into development"
+          target: development

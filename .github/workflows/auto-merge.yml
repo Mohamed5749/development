@@ -15,7 +15,7 @@ jobs:
       - name: Debug event payload
         run: |
           echo "Event name: ${{ github.event_name }}"
-          echo "PR exists: ${{ github.event.issue.pull_request }}"
+          echo "PR exists: ${{ github.event.issue && github.event.issue.pull_request }}"
           echo "Comment body: '${{ github.event.comment.body }}'"
 
       - name: Merge PR if comment is 'merge'
@@ -23,20 +23,17 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // Ensure this is a PR comment
             if (!context.payload.issue || !context.payload.issue.pull_request) {
               console.log("Not a PR comment; skipping.");
               return;
             }
 
-            // Check that comment text is exactly 'merge'
             const comment = context.payload.comment.body.trim().toLowerCase();
             if (comment !== "merge") {
               console.log("Comment is not 'merge'; skipping.");
               return;
             }
 
-            // Merge the PR
             const pr_number = context.payload.issue.number;
             console.log(`Merging PR #${pr_number} into development...`);
 
