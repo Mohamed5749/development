@@ -15,7 +15,7 @@ jobs:
       - name: Debug event payload
         run: |
           echo "Event name: ${{ github.event_name }}"
-          echo "PR exists: ${{ github.event.issue?.pull_request }}"
+          echo "PR exists: ${{ github.event.issue.pull_request != null }}"
           echo "Comment body: '${{ github.event.comment.body }}'"
 
       - name: Merge PR if comment is 'merge'
