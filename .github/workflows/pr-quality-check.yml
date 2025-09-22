@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       contains(github.event.pull_request.labels.*.name, 'check') ||
-      (github.event_name == 'issue_comment' && github.event.comment.body == 'recheck')
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.comment.body == 'recheck')
     steps:
       - uses: actions/checkout@v4
 
@@ -21,7 +21,8 @@ jobs:
           python-version: "3.12"
 
       # Install Python tools
-      - run: pip install black yamllint
+      - name: Install dependencies
+        run: pip install black yamllint
 
       # Python formatting check
       - name: Black format check
