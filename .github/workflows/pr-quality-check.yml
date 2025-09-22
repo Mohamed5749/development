@@ -1,0 +1,26 @@
+name: PR Quality Checks & Auto Merge
+
+on:
+  pull_request:
+    types: [opened, reopened, labeled, unlabeled, synchronize]
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'check') ||
+      (github.event_name == 'issue_comment' && github.event.comment.body == 'recheck')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install black
+      - run: black --check .
+      - run: python -m compileall -q .
