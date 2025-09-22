@@ -21,6 +21,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install black
+      - run: pip install black yamllint
       - run: black --check .
       - run: python -m compileall -q .
+      - name: Lint YAML files
+        run: yamllint .
