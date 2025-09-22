@@ -1,4 +1,4 @@
-name: PR Quality & Auto Merge
+name: PR Quality Checks & Auto Merge
 
 on:
   pull_request:
@@ -14,36 +14,34 @@ jobs:
   quality-checks:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'check')) || 
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, 'recheck'))
+      contains(github.event.pull_request.labels.*.name, 'check') ||
+      (github.event_name == 'issue_comment' && github.event.comment.body == 'recheck')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - run: pip install black
+      - run: black --check .
+      - run: python -m compileall -q .
 
-      - name: Install dependencies
-        run: pip install black
-
-      - name: Run Black formatting check
-        run: black --check --diff $(git ls-files '*.py')
-
-      - name: Verify Python compilation
-        run: python -m compileall -q .
-
-  merge-pr:
+  auto-merge:
+    needs: quality-checks
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'pull_request' &&
-       github.event.action == 'labeled' &&
-       github.event.label.name == 'merge') ||
-      (github.event_name == 'issue_comment' &&
-       github.event.pull_request &&
-       contains(github.event.comment.body, 'merge'))
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, 'merge')
     steps:
-      - name: Enable auto-merge
-        uses: peter-evans/enable-pull-request-automerge@v3
+      - name: Debug event payload
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "PR exists: ${{ github.event.issue.pull_request }}"
+          echo "Comment body: '${{ github.event.comment.body }}'"
+      - name: Merge the pull request
+        uses: peter-evans/merge-pull-request@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ github.event.pull_request.number || github.event.issue.number }}
-          merge-method: squash
+          pull-request: ${{ github.event.issue.number }}
+          method: squash
+          commit-message: "Auto-merged PR into development"
+          target: development
