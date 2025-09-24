@@ -1,14 +1,19 @@
 name: PR Quality Checks
 
 on:
+  # --- Normal triggers ---
   pull_request:
-    types: [labeled, unlabeled, synchronize, reopened, opened]
+    types: [opened, reopened, labeled, unlabeled, synchronize]
   issue_comment:
     types: [created]
 
+  # --- Optional: uncomment while testing to see a run on every push ---
+  # push:
+  #   branches: [development]   # or your default branch (e.g. main)
+
 permissions:
-  pull-requests: write
   contents: read
+  pull-requests: write
 
 jobs:
   quality-checks:
@@ -31,7 +36,7 @@ jobs:
       - name: Install Black
         run: pip install black
 
-      - name: Run Black
+      - name: Run Black (format check)
         run: black --check .
 
       - name: Show Python version
